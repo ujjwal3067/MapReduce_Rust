@@ -7,7 +7,7 @@ use std::process;
 #[derive(Debug)]
 pub struct Pair {
     key: String,
-    count: u64,
+    count: u32,
 }
 
 #[derive(Debug)]
@@ -22,9 +22,14 @@ fn exit_message(message: &str) -> ! {
 }
 
 impl Pair {
-    pub fn new(key: String, count: u64) -> Self {
+    pub fn new(key: String, count: u32) -> Self {
         Pair { key, count }
     }
+
+    pub fn get_count(&self)-> u32 { 
+        self.count
+    }
+
 }
 
 impl Container {
@@ -41,18 +46,18 @@ impl Container {
         }
     }
 
-    /// C Code
-    ///```C
-    /// unsigned long MR_DefaultHashPartition(char *key, int num_partitions) {
-    ///    unsigned long hash = 5381 ;
-    ///     int c;
-    ///     while((c  = *key++) != '\0')
-    ///         hash = hash * 33 + c;
-    ///     return hash % num_partitions;
-    /// }
-    ///```
+    pub fn get_size(&self)-> usize { 
+        self.size 
+    }
 
-    pub fn get_partition(&self, key: &String) -> usize {
+    /// returns a mutable reference to Hashmap inside the partition at index i  
+    pub fn get_parition_hash_map(&mut self, i: usize) -> Option<&mut HashMap<String, Vec<Pair>>> {
+        self.partitions.get_mut(i)
+    }
+
+    /// method produces consistent hash number/index for the partition index inside the
+    /// container for storing keys , value pairs
+    pub fn get_partition_index(&self, key: &String) -> usize {
         let mut hasher = DefaultHasher::new();
         key.hash(&mut hasher);
         let h = hasher.finish();
@@ -64,7 +69,7 @@ impl Container {
     ///threads use
     pub fn insert_pair(&mut self, pair: Pair) {
         let key: String = (pair.key).clone();
-        let index = self.get_partition(&key);
+        let index = self.get_partition_index(&key);
         match self.partitions[index].get_mut(&key) {
             Some(mut vec) => {
                 vec.push(pair);
@@ -74,5 +79,16 @@ impl Container {
                 self.partitions[index].insert(key, vec![pair]);
             }
         };
+    }
+
+    pub fn store(&mut self, m: HashMap<String, u32>) {
+        let mut tmp: Vec<Pair> = Vec::new();
+        for (key, value) in m {
+            tmp.push(Pair::new(key, value));
+        }
+
+        for pair in tmp.into_iter() {
+            self.insert_pair(pair);
+        }
     }
 }

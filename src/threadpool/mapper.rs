@@ -3,8 +3,6 @@
 
 use crate::container;
 use crate::tasks;
-use crate::threadpool; 
+use crate::threadpool;
 
-pub struct Threadpool {
-    
-}
+pub struct Threadpool {}
