@@ -27,7 +27,7 @@ impl Args {
         Args {
             mapper_threads,
             reducer_threads,
-            filesnames: Vec::new(),
+            filesnames: files.to_vec(),  
         }
     }
 }
@@ -42,7 +42,7 @@ fn help() {
     println!(
         "usage : 
     $./process  mapper_threads reducer_threads [files...] \n
-    NOTE : mapper threads and reducer threads  are bounded by 10 threads each 
+    [NOTE]  mapper threads and reducer threads  are bounded by 10 threads each 
      "
     );
 }
