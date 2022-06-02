@@ -3,6 +3,8 @@ use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::process;
+use std::sync::Mutex;
+use std::thread;
 
 #[derive(Debug)]
 pub struct Pair {
@@ -26,10 +28,9 @@ impl Pair {
         Pair { key, count }
     }
 
-    pub fn get_count(&self)-> u32 { 
+    pub fn get_count(&self) -> u32 {
         self.count
     }
-
 }
 
 impl Container {
@@ -46,8 +47,8 @@ impl Container {
         }
     }
 
-    pub fn get_size(&self)-> usize { 
-        self.size 
+    pub fn get_size(&self) -> usize {
+        self.size
     }
 
     /// returns a mutable reference to Hashmap inside the partition at index i  
