@@ -1,0 +1,16 @@
+Tridactyl has to override your new tab page due to WebExtension limitations. You can learn how to change it at the bottom of the page, otherwise please read on for some tips and tricks.
+
+    You can view the main help page by typing :help, and access the tutorial with :tutor. There's a wiki too - feel free to add to it. You may find :apropos useful for finding relevant settings and commands.
+
+    You can view your current configuration with :viewconfig.
+
+    Tridactyl funding 👀: donate via GitHub sponsors here. All GitHub and Patreon donors get a nice little newsletter once every few months; people who donate at least 10USD a month get a "tips & tricks" newsletter roughly once a month (see an example here). You can also donate via PayPal, but they charge fairly high fees and you won't get any newsletters. Donations currently go towards ensuring that bovine3dom can afford to work one day a week on Tridactyl. Previously the donations have funded an in-person developer retreat.
+
+    Upcoming new permission requests: the next version of Tridactyl will require the "hide tabs" and "proxy" permissions in order to provide :tgroup* tab group commands and add proxy support to :autocontain. You will need to click on a small pale yellow notification in the top right of the browser window to update to this version once it is available.
+
+    If Tridactyl breaks a website or is broken by a website, trying the steps in the troubleshooting guide might help.
+
+    You can contact the developers, other users and contributors for support or whatever on Matrix, Gitter, Discord or IRC.
+
+    If you're enjoying Tridactyl (or not), please leave a review on addons.mozilla.org.
+

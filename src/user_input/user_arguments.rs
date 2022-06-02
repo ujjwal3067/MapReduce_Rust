@@ -50,6 +50,7 @@ fn help() {
      "
     );
 }
+
 pub fn user_args() -> Args {
     let args: Vec<String> = env::args().collect();
     match args.len() {
