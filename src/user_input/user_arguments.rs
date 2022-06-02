@@ -1,7 +1,7 @@
 #![allow(dead_code, unused_variables)]
 use std::env;
+use std::fmt;
 use std::process;
-use std::fmt; 
 
 /// This private struct  is responsible for collecting arguments for the program  
 /// arg1 : number of mapper threads
@@ -16,18 +16,22 @@ pub struct Args {
 }
 
 /// Note used at the moment
-impl fmt::Display for Args { 
-    fn fmt (&self, f : &mut fmt ::Formatter) -> fmt::Result { 
-        write!(f, "mapper threads count : {}\n reducer thread count {}\n files name : {:?}", self.mapper_threads, self.reducer_threads, self.filesnames)
+impl fmt::Display for Args {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "mapper threads count : {}\n reducer thread count {}\n files name : {:?}",
+            self.mapper_threads, self.reducer_threads, self.filesnames
+        )
     }
-} 
+}
 
 impl Args {
-    fn new(mapper_threads: u32, reducer_threads: u32, files : &[String]) -> Self {
+    fn new(mapper_threads: u32, reducer_threads: u32, files: &[String]) -> Self {
         Args {
             mapper_threads,
             reducer_threads,
-            filesnames: files.to_vec(),  
+            filesnames: files.to_vec(),
         }
     }
 }
@@ -64,7 +68,7 @@ pub fn user_args() -> Args {
                 _ => exit_message("(while parsing i32) thread count is not an integer"),
             };
             let files = &args[3..];
-            Args::new(mapper_threads as u32 , reducer_threads as u32, files)  
+            Args::new(mapper_threads as u32, reducer_threads as u32, files)
         }
         _ => {
             println!("error : Wrong arguments");
