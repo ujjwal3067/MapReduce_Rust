@@ -1,5 +1,10 @@
 # MapReduce_Rust
 
 
-# Details 
-> comming soon ...
+# TODO
+- [X] container 
+- [X] user argument 
+- [  ] work queue 
+- [  ] Worker Threadpool 
+- [  ] Reducer Threadpool 
+- [  ] testing
