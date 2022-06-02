@@ -1,7 +1,6 @@
-# MapReduce_Rust
 
 
-# TODO
+#### TODO
 - [X] container 
 - [X] user argument 
 - [  ] work queue 
