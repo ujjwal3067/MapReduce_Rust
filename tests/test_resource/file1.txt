@@ -1,0 +1,4 @@
+command command
+king king
+testing testing testing testing
+world
