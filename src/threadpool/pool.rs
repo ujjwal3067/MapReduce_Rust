@@ -23,7 +23,12 @@ use std::thread;
 /// NOTE : receiver is shared between mutlipler worker thread via Arc<Mutex<T>> smart pointer
 pub struct Threadpool {
     workers: Vec<Worker>,
-    sender: mpsc::Sender<Job>,
+    sender: mpsc::Sender<Message>,
+}
+
+enum Message { 
+    NewJob(Job), 
+    Terminate, 
 }
 
 /// closure  + static type  + safe to move between threads
@@ -40,8 +45,7 @@ impl Threadpool {
     pub fn new(size: usize) -> Threadpool {
         assert!(size > 0);
         let (sender, receiver) = mpsc::channel();
-        // so that receiver can be shared between multiple worker threads for picking up jobs for execution 
-        let receiver = Arc::new(Mutex::new(receiver));  
+        let receiver = Arc::new(Mutex::new(receiver));
         let mut workers = Vec::with_capacity(size);
         for id in 0..size {
             workers.push(Worker::new(id, Arc::clone(&receiver)));
@@ -49,35 +53,54 @@ impl Threadpool {
         Threadpool { workers, sender }
     }
 
-
-    pub fn execute<F>(&self, f : F) 
-        where 
-            F : FnOnce() + Send + 'static
-        { 
-            let job = Box::new(f); 
-            self.sender.send(job).unwrap();
+    pub fn execute<F>(&self, f: F)
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        let job = Box::new(f);
+        self.sender.send(Message::NewJob(job)).unwrap();
+    }
+}
+impl Drop for Threadpool {
+    fn drop(&mut self) {
+        for worker in &mut self.workers {
+            if let Some(thread) = worker.thread.take() {
+                thread.join().expect(
+                    "[Error] : Some worker thread didn't finish before program got terminated",
+                );
+            }
         }
+    }
 }
 
 struct Worker {
     id: usize,
-    thread: thread::JoinHandle<()>,
+    thread: Option<thread::JoinHandle<()>>,
 }
 
 impl Worker {
-    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
-        // we are sending recevier to worker thread ends for executing jobs
-        let thread = thread::spawn(move|| {
-            loop { 
+    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message>>>) -> Worker {
+        let thread = thread::spawn(move || {
+            loop {
                 // this is blocking operation
-                let job = receiver.lock().unwrap().recv().expect("[Error] : There was an error on the receiver side of the channel"); 
-                println!("Worker {} got a job : executing.", id); 
-                job(); // execute the closure
+                let message = receiver
+                    .lock()
+                    .unwrap()
+                    .recv()
+                    .expect("[Error] : There was an error on the receiver side of the channel");
+                match message { 
+                    Message::NewJob(job) => { 
+                        job(); 
+                    },
+                    Message::Terminate => { 
+                        break ; 
+                    },
+                }
             }
         });
-        Worker { 
+        Worker {
             id,
-            thread, 
+            thread: Some(thread),
         }
     }
 }
