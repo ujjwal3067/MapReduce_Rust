@@ -1,4 +1,12 @@
 
+### How to Run 
+
+```
+$ cargo run [mapper thread count ] [reducer thread count] [files names ...]
+e.g. $ cargo run  2 3 resources/file1.txt
+
+```
+
 
 #### TODO
 - [X] container 
@@ -7,6 +15,7 @@
 - [  ] Worker Threadpool 
 - [  ] Reducer Threadpool 
 - [  ] testing
+
 
 
 
