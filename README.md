@@ -11,10 +11,10 @@ e.g. $ cargo run  2 3 resources/file1.txt
 #### TODO
 - [X] container 
 - [X] user argument 
-- [  ] work queue 
-- [  ] Worker Threadpool 
-- [  ] Reducer Threadpool 
-- [  ] testing
+- [X] work queue 
+- [X] Worker Threadpool 
+- [X] Reducer Threadpool 
+- [X] testing
 
 
 
