@@ -106,5 +106,4 @@ pub fn reducer(partition: usize) {
     for (key, value) in collector.into_iter() {
         crate::OUTPUT_MAP.lock().unwrap().insert(key, value); 
     }
-    collector.clear(); 
 }
