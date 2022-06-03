@@ -6,6 +6,10 @@ use std::collections::VecDeque;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::fs::OpenOptions; 
+use std::io::prelude::*; 
 
 pub enum State {
     DONE,
@@ -83,6 +87,7 @@ pub fn map(filename: String) {
 /// takes the key value pairs inside container and start counting the frequency of each word in
 /// the partition  
 pub fn reducer(partition: usize) {
+    println!("executing .............. reducer thread");
     let mut collector: HashMap<String, u32> = HashMap::new();
     //let mapper_collection: &mut HashMap<String, Vec<container::Pair>> = crate::CONTAINER.lock().unwrap().get_parition_hash_map(partition).unwrap();
     let container = crate::CONTAINER.lock().unwrap();
@@ -97,5 +102,9 @@ pub fn reducer(partition: usize) {
             *collector.get_mut(&key.to_string()).unwrap() += v.get_count();
         }
     }
-    println!("after reducer : {:?}", collector);
+    
+    for (key, value) in collector.into_iter() {
+        crate::OUTPUT_MAP.lock().unwrap().insert(key, value); 
+    }
+    collector.clear(); 
 }

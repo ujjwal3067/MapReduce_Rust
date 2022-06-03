@@ -8,6 +8,8 @@ use std::sync::mpsc;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread;
+use std::fs::OpenOptions;
+use std::io::prelude::*;
 /// we want the worker structs to fetch jobs from a queue that the Threadpool  holds and run
 /// and run these jobs
 ///
@@ -38,9 +40,9 @@ enum Message {
     Terminate,
 }
 
-enum JobsType { 
-    Mapper(MapJob), 
-    Reducer(ReducerJob), 
+enum JobsType {
+    Mapper(MapJob),
+    Reducer(ReducerJob),
 }
 
 pub struct MapJob {
@@ -48,9 +50,9 @@ pub struct MapJob {
     argument: String,
 }
 
-pub struct ReducerJob { 
-    job_executor : Box<dyn FnOnce(usize) + Send + 'static>, 
-    argument : usize,  
+pub struct ReducerJob {
+    job_executor: Box<dyn FnOnce(usize) + Send + 'static>,
+    argument: usize,
 }
 
 impl MapJob {
@@ -62,11 +64,11 @@ impl MapJob {
     }
 }
 
-impl ReducerJob { 
-    fn new (job : Box<dyn FnOnce(usize) + Send + 'static>, args : usize) -> Self { 
-        ReducerJob { 
-            job_executor : job, 
-            argument : args, 
+impl ReducerJob {
+    fn new(job: Box<dyn FnOnce(usize) + Send + 'static>, args: usize) -> Self {
+        ReducerJob {
+            job_executor: job,
+            argument: args,
         }
     }
 }
@@ -98,7 +100,7 @@ impl MapperPool {
     {
         let job = MapJob::new(Box::new(f), filename);
         //self.sender.send(Message::NewJob(job)).unwrap();
-        self.sender.send(Message::NewJob(JobsType::Mapper(job))); 
+        self.sender.send(Message::NewJob(JobsType::Mapper(job)));
     }
 
     pub fn start_executing_jobs(&self, filenames: Vec<String>) {
@@ -120,20 +122,20 @@ impl ReducerPool {
         ReducerPool { workers, sender }
     }
 
-    fn execute<F>(&self, f : F , partition_num : usize) 
-    where 
-        F : FnOnce(usize) + Send + 'static, 
-    { 
-        let job =  ReducerJob::new(Box::new(f), partition_num);
+    fn execute<F>(&self, f: F, partition_num: usize)
+    where
+        F: FnOnce(usize) + Send + 'static,
+    {
+        let job = ReducerJob::new(Box::new(f), partition_num);
         //self.sender.send(Message::NewJob)
-        self.sender.send(Message::NewJob(JobsType::Reducer(job))); 
+        self.sender.send(Message::NewJob(JobsType::Reducer(job)));
     }
 
-    pub fn start_executing_jobs(&self) { 
-        let size = crate::CONTAINER.lock().unwrap().get_size() ; 
-        for i in 0..size { 
-            println!("executing reducer for partition : {:?}", i); 
-            self.execute(tasks::reducer, i); 
+    pub fn start_executing_jobs(&self) {
+        let size = crate::CONTAINER.lock().unwrap().get_size();
+        for i in 0..size {
+            println!("executing reducer for partition : {:?}", i);
+            self.execute(tasks::reducer, i);
         }
     }
 }
@@ -143,15 +145,54 @@ impl Drop for MapperPool {
         for worker in &mut self.workers {
             self.sender
                 .send(Message::Terminate)
-                .expect("[Error] : Failed to terminate the Worker thread with ");
+                .expect("[Error] : Failed to terminate the Mapper Worker thread");
         }
         for worker in &mut self.workers {
             if let Some(thread) = worker.thread.take() {
                 thread.join().expect(
-                    "[Error] : Some worker thread didn't finish before program got terminated",
+                    "[Error] : Some Mapper Worker thread didn't finish before program got terminated",
                 );
             }
         }
+    }
+}
+
+fn write_result_in_file() { 
+    let mut file = OpenOptions::new() 
+        .write(true)
+        .append(true)
+        .open(crate::OUTPUT_FILE.to_string())
+        .unwrap(); 
+
+    for (key , value)  in crate::OUTPUT_MAP.lock().unwrap().iter() { 
+
+        let s = format!("key : {},  count : {}", key ,value); 
+        if let Err(e) = writeln!(file, "{}", s)  { 
+            eprintln!("[Error] : Couldn't write the final result in the output file : {}",e); 
+
+        }
+    }
+
+}
+
+impl Drop for ReducerPool {
+    fn drop(&mut self) {
+        for worker in &mut self.workers {
+            self.sender
+                .send(Message::Terminate)
+                .expect("[Error] : Failed to terminate the Reducer Worker thread")
+        }
+        for worker in &mut self.workers {
+            if let Some(thread) = worker.thread.take() {
+                thread.join().expect(
+                    "[Error] : Some Reducer Worker thread didn't finish before program got terminated",
+                 );
+            }
+        }
+
+        // Write all the collected output in the output file  
+        write_result_in_file(); 
+
     }
 }
 
@@ -176,12 +217,12 @@ impl Worker {
                         let exe = job.job_executor;
                         let arg = job.argument;
                         exe(arg);
-                    },
-                    Message::NewJob(JobsType::Reducer(job)) => { 
-                        let exe = job.job_executor; 
-                        let arg = job.argument ; 
-                        exe(arg); 
-                    },
+                    }
+                    Message::NewJob(JobsType::Reducer(job)) => {
+                        let exe = job.job_executor;
+                        let arg = job.argument;
+                        exe(arg);
+                    }
                     Message::Terminate => {
                         break;
                     }
