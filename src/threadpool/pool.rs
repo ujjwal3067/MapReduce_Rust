@@ -166,7 +166,7 @@ fn write_result_in_file() {
 
     for (key , value)  in crate::OUTPUT_MAP.lock().unwrap().iter() { 
 
-        let s = format!("key : {},  count : {}", key ,value); 
+        let s = format!("[{}, {}]", key ,value); 
         if let Err(e) = writeln!(file, "{}", s)  { 
             eprintln!("[Error] : Couldn't write the final result in the output file : {}",e); 
 
