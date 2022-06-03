@@ -30,6 +30,9 @@ fn main() {
     let reducer_pool = pool::ReducerPool::new(args.mapper_threads as usize);
     let filenames = args.filesnames;
     mapper_pool.start_executing_jobs(filenames);
+    thread::sleep(time::Duration::from_secs(4));
+    println!("container : {:?}", CONTAINER); 
+    thread::sleep(time::Duration::from_secs(4));
     reducer_pool.start_executing_jobs();
 
 }
