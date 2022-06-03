@@ -26,9 +26,9 @@ pub struct Threadpool {
     sender: mpsc::Sender<Message>,
 }
 
-enum Message { 
-    NewJob(Job), 
-    Terminate, 
+enum Message {
+    NewJob(Job),
+    Terminate,
 }
 
 /// closure  + static type  + safe to move between threads
@@ -64,6 +64,11 @@ impl Threadpool {
 impl Drop for Threadpool {
     fn drop(&mut self) {
         for worker in &mut self.workers {
+            self.sender
+                .send(Message::Terminate)
+                .expect("[Error] : Failed to terminate the Worker thread with ");
+        }
+        for worker in &mut self.workers {
             if let Some(thread) = worker.thread.take() {
                 thread.join().expect(
                     "[Error] : Some worker thread didn't finish before program got terminated",
@@ -88,13 +93,13 @@ impl Worker {
                     .unwrap()
                     .recv()
                     .expect("[Error] : There was an error on the receiver side of the channel");
-                match message { 
-                    Message::NewJob(job) => { 
-                        job(); 
-                    },
-                    Message::Terminate => { 
-                        break ; 
-                    },
+                match message {
+                    Message::NewJob(job) => {
+                        job();
+                    }
+                    Message::Terminate => {
+                        break;
+                    }
                 }
             }
         });

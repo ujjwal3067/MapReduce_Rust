@@ -26,6 +26,4 @@ fn main() {
             println!("running : {}", i);
         });
     }
-    //BUG : not all the jobs are finished before programs terminates
-    thread::sleep(time::Duration::from_secs(3));
 }
