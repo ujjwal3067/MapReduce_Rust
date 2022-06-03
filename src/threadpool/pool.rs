@@ -132,6 +132,7 @@ impl ReducerPool {
     pub fn start_executing_jobs(&self) { 
         let size = crate::CONTAINER.lock().unwrap().get_size() ; 
         for i in 0..size { 
+            println!("executing reducer for partition : {:?}", i); 
             self.execute(tasks::reducer, i); 
         }
     }

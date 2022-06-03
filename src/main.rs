@@ -18,6 +18,7 @@ static CONTAINER: Lazy<Mutex<container::Container>> = Lazy::new(|| {
 });
 
 // global tasks queue for mapper threads
+// HACK : currently not being used
 static MAP_TASK_QUEUE: Lazy<tasks::TaskQueue<String>> = Lazy::new(|| {
     let mut queue = tasks::TaskQueue::new();
     queue
@@ -25,7 +26,10 @@ static MAP_TASK_QUEUE: Lazy<tasks::TaskQueue<String>> = Lazy::new(|| {
 
 fn main() {
     let args = user_input::user_arguments::user_args();
-    let pool = pool::MapperPool::new(args.mapper_threads as usize);
+    let mapper_pool = pool::MapperPool::new(args.mapper_threads as usize);
+    let reducer_pool = pool::ReducerPool::new(args.mapper_threads as usize);
     let filenames = args.filesnames;
-    pool.start_executing_jobs(filenames);
+    mapper_pool.start_executing_jobs(filenames);
+    reducer_pool.start_executing_jobs();
+
 }
