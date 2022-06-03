@@ -77,24 +77,24 @@ pub fn map(filename: String) {
             }
         }
     }
-    //HACK : using global container instead of passing values as argument
     crate::CONTAINER.lock().unwrap().store(m);
 }
 
 /// takes the key value pairs inside container and start counting the frequency of each word in
 /// the partition  
-pub fn reducer(partition: usize, container: &mut container::Container) {
+pub fn reducer(partition: usize) {
     let mut collector: HashMap<String, u32> = HashMap::new();
-    let mapper_collection: &mut HashMap<String, Vec<container::Pair>> =
-        container.get_parition_hash_map(partition).unwrap();
-    // NOTE : key : String and  vector : &mut Vec<Pair>
+    //let mapper_collection: &mut HashMap<String, Vec<container::Pair>> = crate::CONTAINER.lock().unwrap().get_parition_hash_map(partition).unwrap();
+    let container = crate::CONTAINER.lock().unwrap();
+    let mapper_collection = container.get_parition_hash_map(partition).unwrap();
+
     for (key, vector) in mapper_collection {
         // key not present yet
-        if !collector.contains_key(key) {
+        if !collector.contains_key(&key.to_string()) {
             collector.insert(key.to_string(), 0);
         }
         for v in vector.into_iter() {
-            *collector.get_mut(key).unwrap() += v.get_count();
+            *collector.get_mut(&key.to_string()).unwrap() += v.get_count();
         }
     }
     println!("after reducer : {:?}", collector);

@@ -53,8 +53,8 @@ impl Container {
     }
 
     /// returns a mutable reference to Hashmap inside the partition at index i  
-    pub fn get_parition_hash_map(&mut self, i: usize) -> Option<&mut HashMap<String, Vec<Pair>>> {
-        self.partitions.get_mut(i)
+    pub fn get_parition_hash_map(&self, i: usize) -> Option<&HashMap<String, Vec<Pair>>> {
+        self.partitions.get(i)
     }
 
     /// method produces consistent hash number/index for the partition index inside the

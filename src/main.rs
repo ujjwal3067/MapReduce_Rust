@@ -25,10 +25,7 @@ static MAP_TASK_QUEUE: Lazy<tasks::TaskQueue<String>> = Lazy::new(|| {
 
 fn main() {
     let args = user_input::user_arguments::user_args();
-    let pool = pool::Threadpool::new(args.mapper_threads as usize);
-    let filenames = args.filesnames; 
+    let pool = pool::MapperPool::new(args.mapper_threads as usize);
+    let filenames = args.filesnames;
     pool.start_executing_jobs(filenames);
-    // sleep main thread to see the result of container after tasks are executed
-    thread::sleep(time::Duration::from_secs(3)); 
-    println!("{:#?}", CONTAINER);
 }

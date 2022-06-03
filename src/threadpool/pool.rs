@@ -22,32 +22,58 @@ use std::thread;
 /// closures of any jobs it executes.
 /// NOTE : receiver is shared between mutlipler worker thread via Arc<Mutex<T>> smart pointer
 #[derive(Debug)]
-pub struct Threadpool {
+pub struct MapperPool {
+    workers: Vec<Worker>,
+    sender: mpsc::Sender<Message>,
+}
+
+#[derive(Debug)]
+pub struct ReducerPool {
     workers: Vec<Worker>,
     sender: mpsc::Sender<Message>,
 }
 
 enum Message {
-    NewJob(Job),
+    NewJob(JobsType),
     Terminate,
 }
 
-pub struct Job {
+enum JobsType { 
+    Mapper(MapJob), 
+    Reducer(ReducerJob), 
+}
+
+pub struct MapJob {
     job_executor: Box<dyn FnOnce(String) + Send + 'static>,
     argument: String,
 }
-impl Job {
+
+pub struct ReducerJob { 
+    job_executor : Box<dyn FnOnce(usize) + Send + 'static>, 
+    argument : usize,  
+}
+
+impl MapJob {
     fn new(job: Box<dyn FnOnce(String) + Send + 'static>, args: String) -> Self {
-        Job {
+        MapJob {
             job_executor: job,
             argument: args,
         }
     }
 }
 
+impl ReducerJob { 
+    fn new (job : Box<dyn FnOnce(usize) + Send + 'static>, args : usize) -> Self { 
+        ReducerJob { 
+            job_executor : job, 
+            argument : args, 
+        }
+    }
+}
+
 //type Job = (Box<dyn FnOnce() + Send + 'static>, String) ;
 
-impl Threadpool {
+impl MapperPool {
     /// Creates a new threadpool
     ///
     /// The size is the number of threads in the pool
@@ -55,7 +81,7 @@ impl Threadpool {
     /// # panics
     ///
     /// The `new` function will panic is the size <= 0  
-    pub fn new(size: usize) -> Threadpool {
+    pub fn new(size: usize) -> MapperPool {
         assert!(size > 0);
         let (sender, receiver) = mpsc::channel();
         let receiver = Arc::new(Mutex::new(receiver));
@@ -63,24 +89,55 @@ impl Threadpool {
         for id in 0..size {
             workers.push(Worker::new(id, Arc::clone(&receiver)));
         }
-        Threadpool { workers, sender }
+        MapperPool { workers, sender }
     }
 
-     fn execute<F>(&self, f: F, filename: String)
+    fn execute<F>(&self, f: F, filename: String)
     where
         F: FnOnce(String) + Send + 'static,
     {
-        let job = Job::new(Box::new(f), filename);
-        self.sender.send(Message::NewJob(job)).unwrap();
+        let job = MapJob::new(Box::new(f), filename);
+        //self.sender.send(Message::NewJob(job)).unwrap();
+        self.sender.send(Message::NewJob(JobsType::Mapper(job))); 
     }
 
     pub fn start_executing_jobs(&self, filenames: Vec<String>) {
         for file in filenames.into_iter() {
-            self.execute(tasks::map , file); 
+            self.execute(tasks::map, file);
         }
     }
 }
-impl Drop for Threadpool {
+
+impl ReducerPool {
+    pub fn new(size: usize) -> ReducerPool {
+        assert!(size > 0);
+        let (sender, receiver) = mpsc::channel();
+        let receiver = Arc::new(Mutex::new(receiver));
+        let mut workers = Vec::with_capacity(size);
+        for id in 0..size {
+            workers.push(Worker::new(id, Arc::clone(&receiver)));
+        }
+        ReducerPool { workers, sender }
+    }
+
+    fn execute<F>(&self, f : F , partition_num : usize) 
+    where 
+        F : FnOnce(usize) + Send + 'static, 
+    { 
+        let job =  ReducerJob::new(Box::new(f), partition_num);
+        //self.sender.send(Message::NewJob)
+        self.sender.send(Message::NewJob(JobsType::Reducer(job))); 
+    }
+
+    pub fn start_executing_jobs(&self) { 
+        let size = crate::CONTAINER.lock().unwrap().get_size() ; 
+        for i in 0..size { 
+            self.execute(tasks::reducer, i); 
+        }
+    }
+}
+
+impl Drop for MapperPool {
     fn drop(&mut self) {
         for worker in &mut self.workers {
             self.sender
@@ -114,11 +171,16 @@ impl Worker {
                     .recv()
                     .expect("[Error] : There was an error on the receiver side of the channel");
                 match message {
-                    Message::NewJob(job) => {
-                        let exe = job.job_executor ; 
-                        let arg = job.argument ; 
+                    Message::NewJob(JobsType::Mapper(job)) => {
+                        let exe = job.job_executor;
+                        let arg = job.argument;
                         exe(arg);
-                    }
+                    },
+                    Message::NewJob(JobsType::Reducer(job)) => { 
+                        let exe = job.job_executor; 
+                        let arg = job.argument ; 
+                        exe(arg); 
+                    },
                     Message::Terminate => {
                         break;
                     }
