@@ -3,6 +3,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::process;
+use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread;
 

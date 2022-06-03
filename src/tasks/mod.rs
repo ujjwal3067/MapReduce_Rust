@@ -26,9 +26,14 @@ pub struct TaskQueue<T> {
 // let mut REDUCE : ReducerState = ReducerState{ done : State::PROGRESSING};
 
 impl<T> TaskQueue<T> {
-    pub fn new(task_list: Vec<T>) -> Self {
+    pub fn new() -> Self {
+        TaskQueue {
+            queue: VecDeque::new(),
+        }
+    }
+    pub fn add_task(&mut self, task_list: Vec<T>) {
         let queue: VecDeque<T> = VecDeque::from_iter(task_list);
-        TaskQueue { queue }
+        self.queue = queue;
     }
 
     pub fn get_task(&mut self) -> Option<T> {
@@ -50,7 +55,7 @@ where
 
 /// takes file name as argument and calculate frequency of each word in the file
 /// before emitting it to container for storage
-pub fn map(filename: String, container: &mut container::Container) {
+pub fn map(filename: String) {
     let mut m: HashMap<String, u32> = HashMap::new(); // keeps count of each key read in this file
     if let Ok(lines) = read_lines(filename) {
         for line in lines {
@@ -72,8 +77,8 @@ pub fn map(filename: String, container: &mut container::Container) {
             }
         }
     }
-    // store collector pairs inside the container
-    container.store(m);
+    //HACK : using global container instead of passing values as argument
+    crate::CONTAINER.lock().unwrap().store(m);
 }
 
 /// takes the key value pairs inside container and start counting the frequency of each word in

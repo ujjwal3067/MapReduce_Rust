@@ -21,6 +21,7 @@ use std::thread;
 /// In a thread, the worker will loop over its receiving side of the channel and execute the
 /// closures of any jobs it executes.
 /// NOTE : receiver is shared between mutlipler worker thread via Arc<Mutex<T>> smart pointer
+#[derive(Debug)]
 pub struct Threadpool {
     workers: Vec<Worker>,
     sender: mpsc::Sender<Message>,
@@ -31,8 +32,20 @@ enum Message {
     Terminate,
 }
 
-/// closure  + static type  + safe to move between threads
-type Job = Box<dyn FnOnce() + Send + 'static>;
+pub struct Job {
+    job_executor: Box<dyn FnOnce(String) + Send + 'static>,
+    argument: String,
+}
+impl Job {
+    fn new(job: Box<dyn FnOnce(String) + Send + 'static>, args: String) -> Self {
+        Job {
+            job_executor: job,
+            argument: args,
+        }
+    }
+}
+
+//type Job = (Box<dyn FnOnce() + Send + 'static>, String) ;
 
 impl Threadpool {
     /// Creates a new threadpool
@@ -53,12 +66,18 @@ impl Threadpool {
         Threadpool { workers, sender }
     }
 
-    pub fn execute<F>(&self, f: F)
+     fn execute<F>(&self, f: F, filename: String)
     where
-        F: FnOnce() + Send + 'static,
+        F: FnOnce(String) + Send + 'static,
     {
-        let job = Box::new(f);
+        let job = Job::new(Box::new(f), filename);
         self.sender.send(Message::NewJob(job)).unwrap();
+    }
+
+    pub fn start_executing_jobs(&self, filenames: Vec<String>) {
+        for file in filenames.into_iter() {
+            self.execute(tasks::map , file); 
+        }
     }
 }
 impl Drop for Threadpool {
@@ -78,6 +97,7 @@ impl Drop for Threadpool {
     }
 }
 
+#[derive(Debug)]
 struct Worker {
     id: usize,
     thread: Option<thread::JoinHandle<()>>,
@@ -95,7 +115,9 @@ impl Worker {
                     .expect("[Error] : There was an error on the receiver side of the channel");
                 match message {
                     Message::NewJob(job) => {
-                        job();
+                        let exe = job.job_executor ; 
+                        let arg = job.argument ; 
+                        exe(arg);
                     }
                     Message::Terminate => {
                         break;

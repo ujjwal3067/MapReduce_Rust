@@ -10,9 +10,9 @@ use std::process;
 
 #[derive(Debug)]
 pub struct Args {
-    mapper_threads: u32,
-    reducer_threads: u32,
-    filesnames: Vec<String>,
+    pub mapper_threads: u32,
+    pub reducer_threads: u32,
+    pub filesnames: Vec<String>,
 }
 
 /// Note used at the moment
